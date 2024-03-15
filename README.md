@@ -1,1 +1,1 @@
-# qr-stream-generator-go
+# QR Stream Generator (Go)
