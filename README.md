@@ -19,6 +19,16 @@ Options:
 ```
 --chunk_size <INT default 512>
 --delay <INT default 10>
+--num_threads <INT default runtime.NumCPU()>
+```
+
+Example:
+```
+# basic usage
+./qr-stream-gen in.zip out.gif
+
+# specify options
+./qr-stream-gen --chunk_size 1024 --delay 30 --num_threads in.zip out.gif
 ```
 
 ## Download binaries
@@ -46,3 +56,6 @@ For MacOS(64bit, M1/M2/M3 CPU)
 ```
 GOOS=darwin GOARCH=arm64 go build -o qr-stream-gen
 ```
+
+## Limitations
+Due to the low encoding efficiency of the QR code (a single QR code can only bring around 1~3 KB data), it is not suggested to use this tool to encode files larger than 100KB. Normally it is used for sharing codes or other small text files. Also please make sure you're using it legally - DO NOT USE IT TO STEAL SENSITIVE DATA.
