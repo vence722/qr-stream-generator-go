@@ -1,0 +1,1 @@
+# qr-stream-generator-go
