@@ -1,7 +1,7 @@
 # QR Stream Generator
-The Go implementation of QR stream generator
+The Go implementation of QR stream generator. This utility is used to encode any small files into a series of QR codes, named "QR stream". Then user could use a scanner (normally a mobile phone) to decode the QR stream to get the original file. This is useful when there's a networking barrier between the user and the server inside a private network. It helps for sharing files in such situation.
 
-## Demo QR stream scanner site: 
+## Try the demo QR stream scanner below: 
 https://violet-shaylah-82.tiiny.site
 
 ## Sample QR stream
@@ -20,6 +20,9 @@ Options:
 --chunk_size <INT default 512>
 --delay <INT default 10>
 ```
+
+## Download binaries
+See the <a href="#">release page</a>.
 
 ## Build from source code
 Clone this repository, then run the following build command:
