@@ -29,7 +29,7 @@ Clone this repository, then run the following build command:
 
 For Windows(64bit): 
 ```
-GOOS=windows GOARCH=amd64 go build -o qr-stream-gen
+GOOS=windows GOARCH=amd64 go build -o qr-stream-gen.exe
 ```
 
 For Linux(64bit):
