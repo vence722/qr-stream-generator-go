@@ -9,9 +9,11 @@ import (
 	"image"
 	"image/gif"
 	"image/png"
+	"log"
 	"math"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -27,23 +29,36 @@ const (
 	StageDir         = "stage"
 )
 
+var (
+	DefaultNumThreads = runtime.NumCPU()
+)
+
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatal("Sorry we're encountering fatal error:", err)
+		}
+	}()
+
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: qr-stream-gen <input_file> <output_file_in_gif>")
+		fmt.Println("Usage: qr-stream-gen [options] <input_file> <output_file_in_gif>")
 		fmt.Println("\tOptions: ")
 		fmt.Println("\t\t--chunk_size <INT default 512>")
 		fmt.Println("\t\t--delay <INT default 10>")
+		fmt.Println("\t\t--num_threads <INT default runtime.NumCPU()>")
 		os.Exit(1)
 	}
 
-	sourceFileName := os.Args[1]
-	outputFlieName := os.Args[2]
-
-	var chunkSize, delay int
+	var chunkSize, delay, numThreads int
 	flag.IntVar(&chunkSize, "chunk_size", DefaultChunkSize, "QR stream chunk size")
-	flag.IntVar(&delay, "delay", DefaultDelay, "Frame delay")
+	flag.IntVar(&delay, "delay", DefaultDelay, "frame delay")
+	flag.IntVar(&numThreads, "num_threads", DefaultNumThreads, "number of QR code generation threads running in parallel")
 	flag.Parse()
 
+	sourceFileName := flag.Arg(0)
+	outputFlieName := flag.Arg(1)
+
+	fmt.Printf("Settings: chunk_size=%d, delay=%d, num_threads=%d\n", chunkSize, delay, numThreads)
 	fmt.Printf("\rGenerating QR stream [  0%%][>          ]")
 	fileBytes, err := os.ReadFile(sourceFileName)
 	if err != nil {
@@ -63,9 +78,16 @@ func main() {
 	os.RemoveAll(StageDir)
 	os.MkdirAll(StageDir, 0755)
 	totalSize := int(math.Round(float64(len(fileB64)/chunkSize) + 0.5))
+
 	wg := &sync.WaitGroup{}
+	chLimit := make(chan struct{}, numThreads)
+	for i := 0; i < numThreads; i++ {
+		chLimit <- struct{}{}
+	}
+
 	var finishedChunks int64
 	for i, chunk := range chunks {
+		<-chLimit
 		wg.Add(1)
 		go func(i int, chunk string) {
 			hashedFileNameBytes := md5.Sum([]byte(sourceFileName))
@@ -80,6 +102,7 @@ func main() {
 			if int(progress) > 0 {
 				fmt.Printf("\rGenerating QR stream [%3d%%][%s]", int(progress), bar)
 			}
+			chLimit <- struct{}{}
 			wg.Done()
 		}(i, chunk)
 	}
