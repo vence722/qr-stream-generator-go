@@ -5,7 +5,7 @@ The Go implementation of QR stream generator
 https://violet-shaylah-82.tiiny.site
 
 ## Sample QR stream
-![demo-qr-stream](https://violet-shaylah-82.tiiny.site/demo-qr-stream.gif)
+<img src="https://violet-shaylah-82.tiiny.site/demo-qr-stream.gif" width="250" height="250">
 
 ## Prerequisite
 Go version >= 1.22
