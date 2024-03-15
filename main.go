@@ -13,6 +13,8 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/sunshineplan/imgconv"
 	"github.com/yeqown/go-qrcode/v2"
@@ -61,20 +63,27 @@ func main() {
 	os.RemoveAll(StageDir)
 	os.MkdirAll(StageDir, 0755)
 	totalSize := int(math.Round(float64(len(fileB64)/chunkSize) + 0.5))
+	wg := &sync.WaitGroup{}
+	var finishedChunks int64
 	for i, chunk := range chunks {
-		hashedFileNameBytes := md5.Sum([]byte(sourceFileName))
-		hashedFileNameHex := hex.EncodeToString(hashedFileNameBytes[:])
-		header := fmt.Sprintf("[%s:%s:%d:%d]",
-			sourceFileName, hashedFileNameHex, i+1, totalSize)
-		generateQRCode(header+chunk, StageDir, fmt.Sprintf("stg-%d", i+1))
-
-		progress := float64(i+1) / float64(len(chunks)) * 100
-		barLen := int(progress / 10)
-		bar := strings.Repeat("=", barLen) + ">" + strings.Repeat(" ", 10-barLen)
-		if int(progress) > 0 {
-			fmt.Printf("\rGenerating QR stream [%3d%%][%s]", int(progress), bar)
-		}
+		wg.Add(1)
+		go func(i int, chunk string) {
+			hashedFileNameBytes := md5.Sum([]byte(sourceFileName))
+			hashedFileNameHex := hex.EncodeToString(hashedFileNameBytes[:])
+			header := fmt.Sprintf("[%s:%s:%d:%d]",
+				sourceFileName, hashedFileNameHex, i+1, totalSize)
+			generateQRCode(header+chunk, StageDir, fmt.Sprintf("stg-%d", i+1))
+			fc := atomic.AddInt64(&finishedChunks, 1)
+			progress := float64(fc) / float64(len(chunks)) * 100
+			barLen := int(progress / 10)
+			bar := strings.Repeat("=", barLen) + ">" + strings.Repeat(" ", 10-barLen)
+			if int(progress) > 0 {
+				fmt.Printf("\rGenerating QR stream [%3d%%][%s]", int(progress), bar)
+			}
+			wg.Done()
+		}(i, chunk)
 	}
+	wg.Wait()
 	generateGIF(StageDir, outputFlieName, delay)
 	os.RemoveAll(StageDir)
 
