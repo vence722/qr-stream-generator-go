@@ -12,6 +12,7 @@ import (
 	"math"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/sunshineplan/imgconv"
 	"github.com/yeqown/go-qrcode/v2"
@@ -41,7 +42,7 @@ func main() {
 	flag.IntVar(&delay, "delay", DefaultDelay, "Frame delay")
 	flag.Parse()
 
-	fmt.Println("Start generating QR stream...")
+	fmt.Printf("\rGenerating QR stream [  0%%][>          ]")
 	fileBytes, err := os.ReadFile(sourceFileName)
 	if err != nil {
 		panic(err)
@@ -66,11 +67,18 @@ func main() {
 		header := fmt.Sprintf("[%s:%s:%d:%d]",
 			sourceFileName, hashedFileNameHex, i+1, totalSize)
 		generateQRCode(header+chunk, StageDir, fmt.Sprintf("stg-%d", i+1))
+
+		progress := float64(i+1) / float64(len(chunks)) * 100
+		barLen := int(progress / 10)
+		bar := strings.Repeat("=", barLen) + ">" + strings.Repeat(" ", 10-barLen)
+		if int(progress) > 0 {
+			fmt.Printf("\rGenerating QR stream [%3d%%][%s]", int(progress), bar)
+		}
 	}
 	generateGIF(StageDir, outputFlieName, delay)
 	os.RemoveAll(StageDir)
 
-	fmt.Println("QR stream generation finished: " + outputFlieName)
+	fmt.Println("\nQR stream generation is done! Output file: " + outputFlieName)
 }
 
 func generateQRCode(content string, outputDir string, outputFileName string) {
