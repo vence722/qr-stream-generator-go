@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"image"
 	"image/gif"
@@ -18,29 +19,38 @@ import (
 )
 
 const (
-	ChunkSize = 100
-	StageDir  = "stage"
-	Delay     = 10
+	DefaultChunkSize = 512
+	DefaultDelay     = 10
+	StageDir         = "stage"
 )
 
 func main() {
-	if len(os.Args) != 3 {
+	if len(os.Args) < 3 {
 		fmt.Println("Usage: qr-stream-gen <input_file> <output_file_in_gif>")
+		fmt.Println("\tOptions: ")
+		fmt.Println("\t\t--chunk_size <INT default 512>")
+		fmt.Println("\t\t--delay <INT default 10>")
 		os.Exit(1)
 	}
 
 	sourceFileName := os.Args[1]
 	outputFlieName := os.Args[2]
 
+	var chunkSize, delay int
+	flag.IntVar(&chunkSize, "chunk_size", DefaultChunkSize, "QR stream chunk size")
+	flag.IntVar(&delay, "delay", DefaultDelay, "Frame delay")
+	flag.Parse()
+
+	fmt.Println("Start generating QR stream...")
 	fileBytes, err := os.ReadFile(sourceFileName)
 	if err != nil {
 		panic(err)
 	}
-	fileB64 := base64.URLEncoding.EncodeToString(fileBytes)
+	fileB64 := base64.StdEncoding.EncodeToString(fileBytes)
 
 	var chunks []string
-	for i := 0; i < len(fileB64); i += ChunkSize {
-		end := i + ChunkSize
+	for i := 0; i < len(fileB64); i += chunkSize {
+		end := i + chunkSize
 		if end > len(fileB64) {
 			end = len(fileB64)
 		}
@@ -49,7 +59,7 @@ func main() {
 
 	os.RemoveAll(StageDir)
 	os.MkdirAll(StageDir, 0755)
-	totalSize := int(math.Round(float64(len(fileB64)/ChunkSize) + 0.5))
+	totalSize := int(math.Round(float64(len(fileB64)/chunkSize) + 0.5))
 	for i, chunk := range chunks {
 		hashedFileNameBytes := md5.Sum([]byte(sourceFileName))
 		hashedFileNameHex := hex.EncodeToString(hashedFileNameBytes[:])
@@ -57,8 +67,10 @@ func main() {
 			sourceFileName, hashedFileNameHex, i+1, totalSize)
 		generateQRCode(header+chunk, StageDir, fmt.Sprintf("stg-%d", i+1))
 	}
-	generateGIF(StageDir, outputFlieName, Delay)
+	generateGIF(StageDir, outputFlieName, delay)
 	os.RemoveAll(StageDir)
+
+	fmt.Println("QR stream generation finished: " + outputFlieName)
 }
 
 func generateQRCode(content string, outputDir string, outputFileName string) {
