@@ -22,7 +22,7 @@ Options:
 ```
 
 ## Download binaries
-See the <a href="#">release page</a>.
+See the <a href="https://github.com/vence722/qr-stream-generator-go/releases/tag/v1.0.0">release page</a>.
 
 ## Build from source code
 Clone this repository, then run the following build command:
